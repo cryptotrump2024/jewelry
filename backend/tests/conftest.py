@@ -36,9 +36,9 @@ async def _recreate_database() -> None:
 
 async def _seed() -> None:
     from app.db import dispose_engine
-    from app.seeds.tenancy import seed_default_tenant
+    from app.seeds import seed_all
 
-    await seed_default_tenant()
+    await seed_all()
     # Dispose: this ran on a temporary loop; tests get their own loops.
     await dispose_engine()
 

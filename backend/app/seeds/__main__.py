@@ -1,11 +1,11 @@
 import asyncio
 
-from app.seeds.tenancy import seed_default_tenant
+from app.seeds import seed_all
 
 
 async def main() -> None:
-    tenant = await seed_default_tenant()
-    print(f"Seeded default tenant: {tenant.slug} ({tenant.id})")
+    tenant = await seed_all()
+    print(f"Seeded tenant '{tenant.slug}' ({tenant.id}) + reference data")
 
 
 if __name__ == "__main__":

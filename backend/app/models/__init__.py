@@ -12,11 +12,31 @@ from app.models.catalog import (
     TemplateMedia,
     TemplateOptionGroup,
 )
+from app.models.metals import (
+    MaterialOption,
+    Metal,
+    MetalColor,
+    MetalCompatibilityRule,
+    MetalDensity,
+    MetalPriceSnapshot,
+    MetalPriceSource,
+    MetalPurity,
+)
 from app.models.rings import (
     RingProfile,
     RingSize,
     RingSizeStandard,
     TemplateSizeWeightFactor,
+)
+from app.models.stones import (
+    CaratPriceBand,
+    DiamondPriceTable,
+    GemstonePriceTable,
+    StoneCertificate,
+    StoneQualityGrade,
+    StoneShape,
+    StoneType,
+    SupplierStone,
 )
 from app.models.suppliers import Factory, Supplier
 from app.models.tenancy import (
@@ -29,8 +49,24 @@ from app.models.tenancy import (
 
 __all__ = [
     "Base",
+    "CaratPriceBand",
     "Category",
+    "DiamondPriceTable",
     "Factory",
+    "GemstonePriceTable",
+    "MaterialOption",
+    "Metal",
+    "MetalColor",
+    "MetalCompatibilityRule",
+    "MetalDensity",
+    "MetalPriceSnapshot",
+    "MetalPriceSource",
+    "MetalPurity",
+    "StoneCertificate",
+    "StoneQualityGrade",
+    "StoneShape",
+    "StoneType",
+    "SupplierStone",
     "MediaAsset",
     "Option",
     "OptionGroup",
