@@ -5,7 +5,7 @@ commit as the work it describes.
 
 ## Current phase
 
-**Phase 0 — Foundation** (in progress)
+**Phase 1 — Data model** (next up; Phase 0 complete)
 
 ## Phase tracker
 
@@ -13,7 +13,7 @@ Phases and exit tests are defined in `docs/spec/14-roadmap-and-open-decisions.md
 
 | Phase | Name | Status | Exit test passed |
 |---|---|---|---|
-| 0 | Foundation (repo, compose, migrations, tenancy wiring) | 🟡 in progress | — |
+| 0 | Foundation (repo, compose, migrations, tenancy wiring) | ✅ complete | 2026-07-01 — 8 tests green: request carries tenant context end-to-end; migrations + seeds run clean |
 | 1 | Data model (Groups A–P) | ⬜ not started | — |
 | 2 | Rules engine | ⬜ not started | — |
 | 3 | Pricing engine | ⬜ not started | — |
@@ -60,3 +60,4 @@ not yet listed.
 | Date | What |
 |---|---|
 | 2026-07-01 | Spec docs (16 files) received and moved to `docs/spec/`. Root docs created (README, PRINCIPLES, PROGRESS, CLAUDE). `.gitignore` + local `.env` (token, not committed). Backend decision #11 confirmed: Python + FastAPI. Phase 0 started. |
+| 2026-07-01 | **Phase 0 complete.** `backend/`: FastAPI app, SQLAlchemy 2.0 async + Alembic, Group A tenancy tables (migration 0001), idempotent seeds (default tenant, EN/NL, EUR, localhost domain), tenant-resolution middleware (host → tenant_domains → default-slug fallback), tenant-scoped repository base, `/health` + `/tenant/me`. Root: docker-compose (Postgres/Redis/Meilisearch/MinIO), `.env.example`, GitHub Actions CI (ruff + pytest vs real Postgres). Exit test verified live: uvicorn served `/tenant/me` with resolved tenant + seeded data. |
