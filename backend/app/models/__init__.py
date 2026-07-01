@@ -1,4 +1,5 @@
 from app.models.base import Base
+from app.models.cad import CadFile, Future3DAsset, RenderJob
 from app.models.catalog import (
     Category,
     MediaAsset,
@@ -22,12 +23,27 @@ from app.models.metals import (
     MetalPriceSource,
     MetalPurity,
 )
+from app.models.pricing import (
+    Buffer,
+    DesignFee,
+    EngravingCost,
+    FxRate,
+    LaborCost,
+    Margin,
+    PriceCalculation,
+    PriceFormula,
+    PriceSnapshot,
+    PrototypeCost,
+    SettingCost,
+    VatRule,
+)
 from app.models.rings import (
     RingProfile,
     RingSize,
     RingSizeStandard,
     TemplateSizeWeightFactor,
 )
+from app.models.rules import OptionDependency, Rule, RuleSet
 from app.models.stones import (
     CaratPriceBand,
     DiamondPriceTable,
@@ -49,7 +65,25 @@ from app.models.tenancy import (
 
 __all__ = [
     "Base",
+    "Buffer",
+    "CadFile",
     "CaratPriceBand",
+    "DesignFee",
+    "EngravingCost",
+    "FxRate",
+    "Future3DAsset",
+    "LaborCost",
+    "Margin",
+    "OptionDependency",
+    "PriceCalculation",
+    "PriceFormula",
+    "PriceSnapshot",
+    "PrototypeCost",
+    "RenderJob",
+    "Rule",
+    "RuleSet",
+    "SettingCost",
+    "VatRule",
     "Category",
     "DiamondPriceTable",
     "Factory",
