@@ -22,6 +22,12 @@ from app.models.catalog import (
     TemplateOptionGroup,
 )
 from app.models.customers import Address, Consent, Customer, User
+from app.models.feeds import (
+    MerchantCategoryMapping,
+    MerchantFeed,
+    MerchantFeedItem,
+    MerchantFeedRule,
+)
 from app.models.imports import (
     FactoryManufacturability,
     FactoryProductOverride,
@@ -82,6 +88,23 @@ from app.models.rings import (
     TemplateSizeWeightFactor,
 )
 from app.models.rules import OptionDependency, Rule, RuleSet
+from app.models.seo import (
+    AnswerBlock,
+    ContentBlock,
+    FaqBlock,
+    HreflangGroup,
+    HreflangUrl,
+    ImageMetadata,
+    IndexableConfiguration,
+    SeoIndexingRule,
+    SeoInternalLink,
+    SeoMetadata,
+    SeoPage,
+    SeoRedirect,
+    Sitemap,
+    SitemapItem,
+    TopicCluster,
+)
 from app.models.stones import (
     CaratPriceBand,
     DiamondPriceTable,
@@ -93,6 +116,7 @@ from app.models.stones import (
     SupplierStone,
 )
 from app.models.suppliers import Factory, Supplier
+from app.models.system import AuditLog, Job, PriceRefreshLog
 from app.models.tenancy import (
     Tenant,
     TenantCurrency,
@@ -103,7 +127,29 @@ from app.models.tenancy import (
 
 __all__ = [
     "Address",
+    "AnswerBlock",
+    "AuditLog",
     "Base",
+    "ContentBlock",
+    "FaqBlock",
+    "HreflangGroup",
+    "HreflangUrl",
+    "ImageMetadata",
+    "IndexableConfiguration",
+    "Job",
+    "MerchantCategoryMapping",
+    "MerchantFeed",
+    "MerchantFeedItem",
+    "MerchantFeedRule",
+    "PriceRefreshLog",
+    "SeoIndexingRule",
+    "SeoInternalLink",
+    "SeoMetadata",
+    "SeoPage",
+    "SeoRedirect",
+    "Sitemap",
+    "SitemapItem",
+    "TopicCluster",
     "BespokeApproval",
     "BespokeDeposit",
     "BespokeQuote",
