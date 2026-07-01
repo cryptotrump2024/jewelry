@@ -1,4 +1,12 @@
 from app.models.base import Base
+from app.models.bespoke import (
+    BespokeApproval,
+    BespokeDeposit,
+    BespokeQuote,
+    BespokeRequest,
+    BespokeRevision,
+    BespokeUpload,
+)
 from app.models.cad import CadFile, Future3DAsset, RenderJob
 from app.models.catalog import (
     Category,
@@ -13,6 +21,14 @@ from app.models.catalog import (
     TemplateMedia,
     TemplateOptionGroup,
 )
+from app.models.customers import Address, Consent, Customer, User
+from app.models.imports import (
+    FactoryManufacturability,
+    FactoryProductOverride,
+    SupplierImportJob,
+    SupplierImportRow,
+    SupplierPriceList,
+)
 from app.models.metals import (
     MaterialOption,
     Metal,
@@ -22,6 +38,18 @@ from app.models.metals import (
     MetalPriceSnapshot,
     MetalPriceSource,
     MetalPurity,
+)
+from app.models.orders import (
+    Cart,
+    CartItem,
+    Deposit,
+    Order,
+    OrderConfiguration,
+    OrderItem,
+    Payment,
+    Quote,
+    Refund,
+    WithdrawalRequest,
 )
 from app.models.pricing import (
     Buffer,
@@ -36,6 +64,16 @@ from app.models.pricing import (
     PrototypeCost,
     SettingCost,
     VatRule,
+)
+from app.models.production import (
+    HallmarkRecord,
+    ProductionFile,
+    ProductionJob,
+    ProductionNote,
+    ProductionStep,
+    QcCheck,
+    QcPhoto,
+    Shipment,
 )
 from app.models.rings import (
     RingProfile,
@@ -64,8 +102,41 @@ from app.models.tenancy import (
 )
 
 __all__ = [
+    "Address",
     "Base",
+    "BespokeApproval",
+    "BespokeDeposit",
+    "BespokeQuote",
+    "BespokeRequest",
+    "BespokeRevision",
+    "BespokeUpload",
     "Buffer",
+    "Cart",
+    "CartItem",
+    "Consent",
+    "Customer",
+    "Deposit",
+    "FactoryManufacturability",
+    "FactoryProductOverride",
+    "HallmarkRecord",
+    "Order",
+    "OrderConfiguration",
+    "OrderItem",
+    "Payment",
+    "ProductionFile",
+    "ProductionJob",
+    "ProductionNote",
+    "ProductionStep",
+    "QcCheck",
+    "QcPhoto",
+    "Quote",
+    "Refund",
+    "Shipment",
+    "SupplierImportJob",
+    "SupplierImportRow",
+    "SupplierPriceList",
+    "User",
+    "WithdrawalRequest",
     "CadFile",
     "CaratPriceBand",
     "DesignFee",

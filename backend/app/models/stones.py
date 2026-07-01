@@ -9,7 +9,7 @@ parent FK.
 """
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -96,8 +96,8 @@ class DiamondPriceTable(UUIDPrimaryKeyMixin, TimestampMixin, TenantScopedMixin, 
     supplier_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("suppliers.id", ondelete="SET NULL"), nullable=True
     )
-    valid_from: Mapped[datetime | None] = mapped_column(Date, nullable=True)
-    valid_to: Mapped[datetime | None] = mapped_column(Date, nullable=True)
+    valid_from: Mapped[date | None] = mapped_column(Date, nullable=True)
+    valid_to: Mapped[date | None] = mapped_column(Date, nullable=True)
 
 
 class GemstonePriceTable(UUIDPrimaryKeyMixin, TimestampMixin, TenantScopedMixin, Base):

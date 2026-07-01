@@ -161,14 +161,22 @@ class PriceCalculation(UUIDPrimaryKeyMixin, TimestampMixin, TenantScopedMixin, B
 class PriceSnapshot(UUIDPrimaryKeyMixin, TimestampMixin, TenantScopedMixin, Base):
     """IMMUTABLE. Written at quote/order time; self-contained and reproducible.
 
-    quote_id / order_item_id FKs are added in the orders migration (0005) to
-    avoid a circular dependency — the columns exist from day one.
+    quotes/order_items and price_snapshots reference each other, so these two
+    FKs use use_alter (constraint added after both tables exist).
     """
 
     __tablename__ = "price_snapshots"
 
-    quote_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
-    order_item_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    quote_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("quotes.id", ondelete="SET NULL", use_alter=True),
+        nullable=True,
+    )
+    order_item_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("order_items.id", ondelete="SET NULL", use_alter=True),
+        nullable=True,
+    )
     inputs: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     itemized: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     total_minor: Mapped[int] = mapped_column(BigInteger, nullable=False)
