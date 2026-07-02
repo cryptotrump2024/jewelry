@@ -93,7 +93,14 @@ async def test_option_groups_attached_in_step_order_with_default():
             keys.append(group.key)
             if group.key == "metal":
                 assert link.default_option_id is not None  # fresh configurator is complete
-        assert keys == ["metal", "stone_type", "stone_shape", "carat", "ring_size"]
+        assert keys == [
+            "metal",
+            "stone_type",
+            "stone_shape",
+            "carat",
+            "certificate",
+            "ring_size",
+        ]
 
 
 async def test_versioned_rule_set_published():

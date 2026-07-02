@@ -80,6 +80,28 @@ def test_dead_option_detected():
     assert report.dead_options == {"metal": ["silver_925"]}
 
 
+def test_empty_optional_group_skipped_but_reported():
+    report = simulate_rule_set([], GROUP_OPTIONS | {"ring_size": []})
+    assert report.ok is True
+    assert report.empty_groups == ["ring_size"]
+    assert report.total_combinations == 18  # cartesian product ignores the empty group
+    assert report.valid_count == 18  # not vacuously 0
+
+
+def test_empty_required_group_is_a_contradiction():
+    report = simulate_rule_set(
+        [], GROUP_OPTIONS | {"ring_size": []}, required_groups=["ring_size"]
+    )
+    assert report.ok is False
+    assert any("no selectable options" in c for c in report.contradictions)
+
+
+def test_all_groups_empty_flagged():
+    report = simulate_rule_set([], {"metal": []})
+    assert report.ok is False
+    assert report.always_blocked is True
+
+
 def test_requirement_satisfiable_when_group_offered():
     rules = [
         RuleData(

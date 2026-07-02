@@ -34,6 +34,7 @@ class SimulationReport:
     always_blocked: bool
     dead_options: dict[str, list[str]] = field(default_factory=dict)
     contradictions: list[str] = field(default_factory=list)
+    empty_groups: list[str] = field(default_factory=list)
     sampled: bool = False
 
 
@@ -47,12 +48,34 @@ def simulate_rule_set(
     group_options: {group_key: [option codes]} as the configurator would
     offer them (metal values may be nested dicts for per-component metals).
     """
-    keys = list(group_options.keys())
+    # Empty groups can't be combined: a required empty group is a
+    # contradiction outright; an optional one is skipped but reported —
+    # never silently multiplied away (that made the simulation vacuous).
+    empty_groups = [k for k, opts in group_options.items() if len(list(opts)) == 0]
+    contradictions_pre: list[str] = [
+        f"Required group '{k}' has no selectable options."
+        for k in empty_groups
+        if k in required_groups
+    ]
+    keys = [k for k in group_options if k not in empty_groups]
     pools = [list(group_options[k]) for k in keys]
+
+    if not keys or contradictions_pre:
+        return SimulationReport(
+            ok=False,
+            total_combinations=0,
+            valid_count=0,
+            invalid_count=0,
+            quote_only_count=0,
+            always_blocked=not keys,
+            contradictions=contradictions_pre
+            or ["No option group offers any selectable option."],
+            empty_groups=empty_groups,
+        )
 
     total = 1
     for pool in pools:
-        total *= max(len(pool), 1)
+        total *= len(pool)
 
     sampled = total > MAX_COMBINATIONS
     combos = product(*pools)
@@ -118,6 +141,7 @@ def simulate_rule_set(
         always_blocked=always_blocked,
         dead_options=dead_options,
         contradictions=contradictions,
+        empty_groups=empty_groups,
         sampled=sampled,
     )
 

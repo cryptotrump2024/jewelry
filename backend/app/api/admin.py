@@ -15,6 +15,7 @@ from sqlalchemy import select
 
 from app.api.routes import DbSession
 from app.models import (
+    Category,
     Option,
     OptionGroup,
     ProductTemplate,
@@ -27,6 +28,10 @@ from app.rules.simulator import simulate_rule_set
 from app.tenancy.repository import TenantScopedRepository
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+class CategoryRepo(TenantScopedRepository[Category]):
+    model = Category
 
 
 class TemplateRepo(TenantScopedRepository[ProductTemplate]):
@@ -90,6 +95,15 @@ class RuleCreate(BaseModel):
     sort: int = 0
 
 
+# --- Categories ---
+
+
+@router.get("/categories")
+async def list_categories(session: DbSession) -> list[dict]:
+    categories = await CategoryRepo(session).list()
+    return [{"id": str(c.id), "name": c.name, "slug": c.slug} for c in categories]
+
+
 # --- Templates ---
 
 
@@ -100,6 +114,104 @@ async def list_templates(session: DbSession) -> list[dict]:
         {"id": str(t.id), "code": t.code, "name": t.name, "status": t.status}
         for t in templates
     ]
+
+
+@router.get("/templates/{template_id}")
+async def get_template(template_id: uuid.UUID, session: DbSession) -> dict:
+    template = await TemplateRepo(session).get(template_id)
+    if template is None:
+        raise HTTPException(404, "template not found")
+
+    links = (
+        await session.execute(
+            select(TemplateOptionGroup, OptionGroup)
+            .join(OptionGroup, OptionGroup.id == TemplateOptionGroup.option_group_id)
+            .where(TemplateOptionGroup.template_id == template.id)
+            .order_by(TemplateOptionGroup.step_order)
+        )
+    ).all()
+    groups = []
+    for link, group in links:
+        options = (
+            (
+                await session.execute(
+                    select(Option)
+                    .where(Option.option_group_id == group.id)
+                    .order_by(Option.sort)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        groups.append(
+            {
+                "id": str(group.id),
+                "key": group.key,
+                "name": group.name,
+                "step_order": link.step_order,
+                "is_required": link.is_required,
+                "options": [
+                    {"id": str(o.id), "code": o.code, "label": o.label, "is_active": o.is_active}
+                    for o in options
+                ],
+            }
+        )
+
+    rule_sets = (
+        (
+            await session.execute(
+                select(RuleSet)
+                .where(RuleSet.template_id == template.id)
+                .order_by(RuleSet.version.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return {
+        "id": str(template.id),
+        "code": template.code,
+        "name": template.name,
+        "style": template.style,
+        "status": template.status,
+        "option_groups": groups,
+        "rule_sets": [
+            {"id": str(rs.id), "version": rs.version, "status": rs.status} for rs in rule_sets
+        ],
+    }
+
+
+@router.get("/option-groups")
+async def list_option_groups(session: DbSession) -> list[dict]:
+    groups = await OptionGroupRepo(session).list()
+    return [
+        {"id": str(g.id), "key": g.key, "name": g.name, "sort": g.sort}
+        for g in sorted(groups, key=lambda g: g.sort)
+    ]
+
+
+@router.get("/rule-sets/{rule_set_id}")
+async def get_rule_set(rule_set_id: uuid.UUID, session: DbSession) -> dict:
+    rule_set = await RuleSetRepo(session).get(rule_set_id)
+    if rule_set is None:
+        raise HTTPException(404, "rule set not found")
+    await session.refresh(rule_set, ["rules"])
+    return {
+        "id": str(rule_set.id),
+        "version": rule_set.version,
+        "status": rule_set.status,
+        "rules": [
+            {
+                "id": str(r.id),
+                "type": r.type,
+                "condition": r.condition,
+                "effect": r.effect,
+                "message": r.message,
+                "sort": r.sort,
+            }
+            for r in rule_set.rules
+        ],
+    }
 
 
 @router.post("/templates", status_code=201)
@@ -190,7 +302,10 @@ async def add_rule(rule_set_id: uuid.UUID, payload: RuleCreate, session: DbSessi
     return {"id": str(rule.id)}
 
 
-async def _group_options_for_template(session, template_id: uuid.UUID) -> dict[str, list[str]]:
+async def _group_options_for_template(
+    session, template_id: uuid.UUID
+) -> tuple[dict[str, list[str]], list[str]]:
+    """Returns ({group_key: option codes}, [required group keys])."""
     links = (
         (
             await session.execute(
@@ -203,7 +318,8 @@ async def _group_options_for_template(session, template_id: uuid.UUID) -> dict[s
         .all()
     )
     result: dict[str, list[str]] = {}
-    for _link, group in links:
+    required: list[str] = []
+    for link, group in links:
         options = (
             (
                 await session.execute(
@@ -216,7 +332,9 @@ async def _group_options_for_template(session, template_id: uuid.UUID) -> dict[s
             .all()
         )
         result[group.key] = list(options)
-    return result
+        if link.is_required:
+            required.append(group.key)
+    return result, required
 
 
 async def _simulate(session, rule_set: RuleSet) -> dict:
@@ -232,10 +350,10 @@ async def _simulate(session, rule_set: RuleSet) -> dict:
         )
         for r in rule_set.rules
     ]
-    group_options = await _group_options_for_template(session, rule_set.template_id)
+    group_options, required = await _group_options_for_template(session, rule_set.template_id)
     if not group_options:
         raise HTTPException(409, "template has no option groups attached — nothing to simulate")
-    report = simulate_rule_set(rules, group_options)
+    report = simulate_rule_set(rules, group_options, required_groups=required)
     return {
         "ok": report.ok,
         "total_combinations": report.total_combinations,
@@ -245,6 +363,7 @@ async def _simulate(session, rule_set: RuleSet) -> dict:
         "always_blocked": report.always_blocked,
         "dead_options": report.dead_options,
         "contradictions": report.contradictions,
+        "empty_groups": report.empty_groups,
         "sampled": report.sampled,
     }
 

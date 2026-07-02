@@ -45,8 +45,9 @@ COMPONENTS = [
 ]
 
 CARAT_OPTIONS = ["0.30", "0.50", "0.70", "1.00", "1.50", "2.00"]
+CERTIFICATE_OPTIONS = ["gia", "igi"]
 
-STEP_ORDER = ["metal", "stone_type", "stone_shape", "carat", "ring_size"]
+STEP_ORDER = ["metal", "stone_type", "stone_shape", "carat", "certificate", "ring_size"]
 
 
 async def _material_code(session: AsyncSession, mo: MaterialOption) -> str:
@@ -203,7 +204,19 @@ async def seed_demo_template(session: AsyncSession, tenant: Tenant) -> ProductTe
             defaults={"label": f"{carat} ct", "value": {"carat": carat}, "sort": sort},
         )
 
-    # Attach groups to the template in step order.
+    # Certificate options (required conditionally by rule when carat > 0.30).
+    for sort, cert in enumerate(CERTIFICATE_OPTIONS):
+        await _get_or_create(
+            session,
+            Option,
+            option_group_id=groups["certificate"].id,
+            code=cert,
+            defaults={"label": cert.upper(), "value": {"lab": cert}, "sort": sort},
+        )
+
+    # Attach groups to the template in step order. certificate and ring_size
+    # are not unconditionally required: the rule set requires certificate
+    # only above 0.30 ct.
     for step, key in enumerate(STEP_ORDER, start=1):
         await _get_or_create(
             session,
@@ -212,7 +225,7 @@ async def seed_demo_template(session: AsyncSession, tenant: Tenant) -> ProductTe
             option_group_id=groups[key].id,
             defaults={
                 "step_order": step,
-                "is_required": key != "ring_size",
+                "is_required": key not in ("ring_size", "certificate"),
                 "default_option_id": default_metal_option.id
                 if key == "metal" and default_metal_option
                 else None,
