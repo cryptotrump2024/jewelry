@@ -11,6 +11,8 @@ from app.api.public import router as public_router
 from app.api.public_orders import router as public_orders_router
 from app.api.public_withdrawals import router as public_withdrawals_router
 from app.api.routes import router
+from app.api.seo import admin_router as seo_admin_router
+from app.api.seo import router as seo_router
 from app.db import dispose_engine
 from app.services.config_service import close_redis
 from app.tenancy.middleware import TenantContextMiddleware
@@ -36,5 +38,7 @@ app.include_router(public_withdrawals_router)
 app.include_router(production_router)
 app.include_router(bespoke_router)
 app.include_router(bespoke_admin_router)
+app.include_router(seo_router)
+app.include_router(seo_admin_router)
 app.include_router(admin_router)
 app.include_router(admin_pricing_router)
