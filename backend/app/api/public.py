@@ -82,6 +82,24 @@ async def list_templates(
     ]
 
 
+@router.get("/templates/by-code/{code}")
+async def get_template_by_code(code: str, session: DbSession) -> dict:
+    tid = get_current_tenant().tenant_id
+    template = (
+        await session.execute(
+            select(ProductTemplate).where(
+                ProductTemplate.tenant_id == tid,
+                ProductTemplate.code == code,
+                ProductTemplate.status == "active",
+                ProductTemplate.deleted_at.is_(None),
+            )
+        )
+    ).scalar_one_or_none()
+    if template is None:
+        raise HTTPException(404, "template not found")
+    return await get_template(template.id, session)
+
+
 async def _template_or_404(session: AsyncSession, template_id: uuid.UUID) -> ProductTemplate:
     tid = get_current_tenant().tenant_id
     template = (
