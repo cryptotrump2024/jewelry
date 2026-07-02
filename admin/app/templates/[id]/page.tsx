@@ -1,4 +1,5 @@
 import { engineFetch } from "@/lib/engine";
+import { PricePreview } from "./price-preview";
 import { AttachGroupForm, NewRuleSetButton, RuleSetActions } from "./widgets";
 
 type TemplateDetail = {
@@ -73,6 +74,8 @@ export default async function TemplatePage({
           nextStep={template.option_groups.length + 1}
         />
       </div>
+
+      <PricePreview templateId={template.id} groups={template.option_groups} />
 
       <div className="card">
         <h2>Rule sets</h2>
