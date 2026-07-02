@@ -143,6 +143,14 @@ async def test_fallback_chain_goldapi_down_manual_wins(db):
 
 async def test_all_sources_down_returns_empty_and_logs(db):
     tid = await _tenant_id(db)
+    # Disable the seeded manual fallback for this test (rolled back after).
+    from sqlalchemy import update
+
+    await db.execute(
+        update(MetalPriceSource)
+        .where(MetalPriceSource.tenant_id == tid)
+        .values(is_active=False)
+    )
     await _add_source(db, tid, "goldapi", 0, {})  # missing api_key → ProviderError
 
     snaps = await refresh_metal_prices(db, tid, "EUR")
@@ -212,9 +220,11 @@ async def test_refresh_fx_rates_writes_rows(db):
 
 # --- CSV import (Phase 4 exit, part 2) ---
 
+# H/VS2 quality is deliberately NOT in the seeded tables (those are G/SI1),
+# so these rows are genuine creates.
 CSV_OK = """stone_type,shape,carat_min,carat_max,color,clarity,price_per_carat,currency
-lab_diamond,oval,0.30,0.49,G,SI1,950,EUR
-lab_diamond,oval,0.50,0.69,G,SI1,1200,EUR
+lab_diamond,oval,0.30,0.49,H,VS2,950,EUR
+lab_diamond,oval,0.50,0.69,H,VS2,1200,EUR
 natural_diamond,round,1.00,1.49,F,VS1,8200,EUR
 """
 
@@ -226,20 +236,24 @@ lab_diamond,oval,0.90,0.70,G,SI1,abc,EURO
 """
 
 
-async def test_dry_run_validates_rows_touches_nothing(db):
-    tid = await _tenant_id(db)
-    job = await run_diamond_price_import(db, tid, CSV_WITH_ERRORS, dry_run=True)
-
-    assert job.dry_run is True
-    assert job.stats == {"rows": 4, "ok": 1, "errors": 3, "created": 0, "updated": 0}
-    count = (
+async def _price_table_count(db, tid) -> int:
+    return (
         await db.execute(
             select(func.count())
             .select_from(DiamondPriceTable)
             .where(DiamondPriceTable.tenant_id == tid)
         )
     ).scalar_one()
-    assert count == 0  # dry-run never writes target tables
+
+
+async def test_dry_run_validates_rows_touches_nothing(db):
+    tid = await _tenant_id(db)
+    before = await _price_table_count(db, tid)
+    job = await run_diamond_price_import(db, tid, CSV_WITH_ERRORS, dry_run=True)
+
+    assert job.dry_run is True
+    assert job.stats == {"rows": 4, "ok": 1, "errors": 3, "created": 0, "updated": 0}
+    assert await _price_table_count(db, tid) == before  # dry-run never writes targets
 
     rows = (
         (
@@ -260,20 +274,14 @@ async def test_dry_run_validates_rows_touches_nothing(db):
 
 async def test_commit_writes_then_recommit_is_idempotent(db):
     tid = await _tenant_id(db)
+    before = await _price_table_count(db, tid)
     job1 = await run_diamond_price_import(db, tid, CSV_OK, dry_run=False)
     assert job1.stats["created"] == 3 and job1.stats["errors"] == 0
 
     job2 = await run_diamond_price_import(db, tid, CSV_OK, dry_run=False)
     assert job2.stats["created"] == 0 and job2.stats["updated"] == 0  # unchanged
 
-    count = (
-        await db.execute(
-            select(func.count())
-            .select_from(DiamondPriceTable)
-            .where(DiamondPriceTable.tenant_id == tid)
-        )
-    ).scalar_one()
-    assert count == 3
+    assert await _price_table_count(db, tid) == before + 3
 
     # Price change in a re-imported file updates in place, no duplicates.
     job3 = await run_diamond_price_import(

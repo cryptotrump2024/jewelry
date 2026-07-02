@@ -266,6 +266,60 @@ async def create_option(group_id: uuid.UUID, payload: OptionCreate, session: DbS
     return {"id": str(option.id), "code": option.code}
 
 
+# --- Price preview (the "live breakdown" of the Phase 5 exit test) ---
+
+
+class PricePreviewRequest(BaseModel):
+    selections: dict[str, Any]
+    market: str = "NL"
+    currency: str = "EUR"
+
+
+@router.post("/templates/{template_id}/price-preview")
+async def price_preview(
+    template_id: uuid.UUID, payload: PricePreviewRequest, session: DbSession
+) -> dict:
+    from app.services.pricing_resolver import resolve_and_price
+    from app.tenancy.context import get_current_tenant
+
+    template = await TemplateRepo(session).get(template_id)
+    if template is None:
+        raise HTTPException(404, "template not found")
+
+    resolved = await resolve_and_price(
+        session,
+        get_current_tenant().tenant_id,
+        template,
+        payload.selections,
+        market=payload.market,
+        currency=payload.currency,
+    )
+    price = resolved.price
+    return {
+        "validation": {
+            "status": resolved.validation.status,
+            "reasons": resolved.validation.reasons,
+            "visible_groups": resolved.validation.visible_groups,
+            "required_groups": resolved.validation.required_groups,
+        },
+        "price": (
+            {
+                "status": price.status,
+                "currency": price.currency,
+                "total_minor": price.total_minor,
+                "range_min_minor": price.range_min_minor,
+                "range_max_minor": price.range_max_minor,
+                "itemized": price.itemized,
+                "reasons": price.reasons,
+                "degraded": price.degraded,
+                "non_returnable": price.non_returnable,
+            }
+            if price
+            else None
+        ),
+    }
+
+
 # --- Rule sets: draft → simulate → publish ---
 
 
