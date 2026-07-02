@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     # tenant. SaaS later resolves strictly by domain.
     default_tenant_slug: str = "default"
 
+    # Bearer token protecting /admin endpoints. Empty = auth disabled (local
+    # dev only) — set it in every deployed environment. Proper staff accounts
+    # (users table, roles) replace this at SaaS time.
+    admin_api_token: str = ""
+
     environment: str = "local"
 
 

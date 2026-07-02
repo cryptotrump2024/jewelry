@@ -9,10 +9,11 @@ until then.
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
+from app.api.admin_auth import require_admin
 from app.api.routes import DbSession
 from app.models import (
     Category,
@@ -27,7 +28,7 @@ from app.rules.engine import RuleData
 from app.rules.simulator import simulate_rule_set
 from app.tenancy.repository import TenantScopedRepository
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
 
 class CategoryRepo(TenantScopedRepository[Category]):
