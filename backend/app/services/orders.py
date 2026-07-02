@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
     Customer,
+    Deposit,
     Order,
     OrderConfiguration,
     OrderItem,
@@ -218,7 +219,38 @@ async def create_payment_intent(
     if kind not in ("deposit_production", "balance", "full"):
         raise OrderFlowError(f"unsupported payment kind '{kind}'")
     total = int(order.totals["total_minor"])
-    amount = deposit_amount_minor(total) if kind == "deposit_production" else total
+    if kind == "deposit_production":
+        amount = deposit_amount_minor(total)
+    elif kind == "balance":
+        # Balance = total − everything already paid − credited deposits
+        # (e.g. the bespoke design deposit).
+        paid = sum(
+            p.amount_minor
+            for p in (
+                await session.execute(
+                    select(Payment).where(
+                        Payment.order_id == order.id, Payment.status == "paid"
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        credited = sum(
+            d.amount_minor
+            for d in (
+                await session.execute(
+                    select(Deposit).where(Deposit.credited_to_order_id == order.id)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        amount = total - paid - credited
+        if amount <= 0:
+            raise OrderFlowError("nothing left to pay on this order")
+    else:
+        amount = total
 
     payment = Payment(
         tenant_id=tenant_id,
@@ -241,13 +273,23 @@ async def create_payment_intent(
     return payment, client_payload
 
 
-async def complete_mock_payment(session: AsyncSession, payment: Payment) -> Order:
+async def complete_mock_payment(session: AsyncSession, payment: Payment) -> Order | None:
     """Stand-in for the PSP webhook: marks the payment paid and advances the
 
     order/production workflow exactly like the real webhook will.
     """
     if payment.psp != "mock":
         raise OrderFlowError("only mock payments can be completed manually")
+
+    if payment.order_id is None and payment.bespoke_request_id is not None:
+        # Bespoke design deposit — no order yet.
+        from app.services.bespoke import on_design_deposit_paid
+
+        if payment.status != "paid":
+            payment.status = "paid"
+            await on_design_deposit_paid(session, payment)
+        return None
+
     if payment.status == "paid":
         order = (
             await session.execute(select(Order).where(Order.id == payment.order_id))

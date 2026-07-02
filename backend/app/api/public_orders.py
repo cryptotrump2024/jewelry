@@ -199,4 +199,7 @@ async def post_mock_complete(payment_id: uuid.UUID, session: DbSession) -> dict:
     except OrderFlowError as exc:
         raise HTTPException(409, str(exc)) from None
     await session.commit()
-    return {"payment_status": payment.status, "order_status": order.status}
+    return {
+        "payment_status": payment.status,
+        "order_status": order.status if order else None,
+    }

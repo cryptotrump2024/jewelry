@@ -5,7 +5,7 @@ commit as the work it describes.
 
 ## Current phase
 
-**Phase 7 — Storefront (Next.js)** (next up; Phases 0–6 complete)
+**Phase 9 — SEO/GEO output + Merchant feed** (next up; Phases 0–6 and 8 complete, Phase 7 complete on sandbox PSP)
 
 ## Phase tracker
 
@@ -21,7 +21,7 @@ Phases and exit tests are defined in `docs/spec/14-roadmap-and-open-decisions.md
 | 5 | Admin app | ✅ complete | 2026-07-02 — exit flow works in the UI, no code: create template → attach option steps → draft/simulate/publish rules → edit pricing config → correct live itemized breakdown. Media-upload + SEO-fields screens deliberately trail into Phases 7/9 when the storefront consumes them |
 | 6 | Configurator + pricing API (headless) | ✅ complete | 2026-07-02 — FRD MVP criteria 1–3 pass against /api/v1 (91 tests); p95 latency asserted < 300 ms in-suite |
 | 7 | Storefront (Next.js) | 🟡 exit flow verified (sandbox PSP) | — configure → correct live price → deposit checkout → confirmation all work end-to-end; ProductGroup schema emitted. Remaining: real Mollie key (owner, decision #6), media previews, size guide, i18n/currency switch |
-| 8 | Orders, bespoke, production, compliance | 🟡 in progress | — orders + snapshot locking ✅, withdrawal function ✅, production lifecycle + hallmark gate ✅; remaining: bespoke deposit flow, balance payment + real PSP |
+| 8 | Orders, bespoke, production, compliance | ✅ complete | 2026-07-02 — 104 tests green: FRD criteria 4–5 pass (bespoke request→deposit→revisions→quote→approve→order→balance; immutable snapshot + factory spec); hallmark-required items can't ship without an applied record; two-step withdrawal with acknowledgement. Prototype-order option + real PSP swap remain as small follow-ups |
 | 9 | SEO/GEO output + Merchant feed | ⬜ not started | — |
 | 10 | AI Jewelry Designer | ⬜ not started | — |
 | 11+ | 3D, live feeds, ready-made, SaaS | ⬜ not started | — |
@@ -60,6 +60,7 @@ not yet listed.
 | Date | What |
 |---|---|
 | 2026-07-01 | Spec docs (16 files) received and moved to `docs/spec/`. Root docs created (README, PRINCIPLES, PROGRESS, CLAUDE). `.gitignore` + local `.env` (token, not committed). Backend decision #11 confirmed: Python + FastAPI. Phase 0 started. |
+| 2026-07-02 | **Phase 8 complete: bespoke flow + balance payments.** `app/services/bespoke.py` + `/api/v1/bespoke`: request with rough range from stated budget (±20%), €250 design deposit (decision #4, non-refundable, credited), revisions gated on paid deposit, admin quote (total must equal itemized sum), customer approval → bespoke order with quote-based immutable snapshot, always non-returnable, production job opened, design deposit credited to the order. Balance intent now computes total − paid − credited deposits and refuses when nothing is left. Full journey tested: €5,445 quote → €2,722.50 production deposit → €2,472.50 balance → order paid. |
 | 2026-07-02 | **Phase 8: withdrawals + production.** EU Art. 11a withdrawal function: per-item eligibility (non_returnable → exempt_personalised with CRD 16(c) reason), two-step initiate→confirm with durable-medium acknowledgement recorded (mail dispatch pending mailer). Production/factory API: job list + spec sheet (config, stone, est. weight, hallmark flag), step recording, actual-weight capture (est-vs-actual), QC pass/fail, hallmark records, shipment. **Hallmark gate enforced**: gold ≥1g / silver ≥8g / Pt ≥0.5g (unknown = required, fail-safe) — shipping 409s until an *applied* hallmark record exists; pending is not enough. 102 tests green. |
 | 2026-07-02 | **Phase 7: checkout in the storefront.** Configurator "Continue to order" → POST /quotes → `/checkout/[quoteId]` (selection + itemized summary, 50% deposit line, non-returnable notice, customer form) → POST /orders + /payments/intent → `/checkout/pay/[paymentId]` sandbox payment → `/order/[orderId]` confirmation with status copy. Checkout/pay/order pages are noindex. Verified live end-to-end: quote €4,883.73 → deposit paid → order in_production → confirmation renders. Phase 7 exit flow done on sandbox PSP; the Mollie swap needs the owner's API key (decision #6). |
 | 2026-07-02 | **Phase 7/8: order flow.** `app/services/orders.py` + `/api/v1` endpoints: POST /quotes re-runs validate+price authoritatively (client price is advisory) and freezes a PriceSnapshot row with full version pins; invalid → 409, quote_only → 409 "request a manual quote". POST /orders consumes an open unexpired quote → order (awaiting_deposit) + order item + resolved factory spec + production job; 50% deposit default (decision #5). POST /payments/intent via PSP adapter (mock provider until Mollie key — decision #6); mock-complete stands in for the webhook and advances order → in_production, job → queued, idempotently. API-level snapshot proof: gold +20% after ordering leaves the order total frozen while fresh quotes reprice. 96 tests green. |

@@ -4,6 +4,8 @@ from fastapi import FastAPI
 
 from app.api.admin import router as admin_router
 from app.api.admin_pricing import router as admin_pricing_router
+from app.api.bespoke import admin_router as bespoke_admin_router
+from app.api.bespoke import router as bespoke_router
 from app.api.production import router as production_router
 from app.api.public import router as public_router
 from app.api.public_orders import router as public_orders_router
@@ -32,5 +34,7 @@ app.include_router(public_router)
 app.include_router(public_orders_router)
 app.include_router(public_withdrawals_router)
 app.include_router(production_router)
+app.include_router(bespoke_router)
+app.include_router(bespoke_admin_router)
 app.include_router(admin_router)
 app.include_router(admin_pricing_router)
