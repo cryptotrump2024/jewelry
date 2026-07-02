@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TemplateDetail } from "./page";
 
@@ -40,7 +41,10 @@ export function Configurator({
   });
   const [price, setPrice] = useState<PriceResponse | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [ordering, setOrdering] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
   const requestSeq = useRef(0);
+  const router = useRouter();
 
   const fetchPrice = useCallback(
     async (current: Record<string, string>) => {
@@ -90,6 +94,23 @@ export function Configurator({
     } catch {
       /* clipboard unavailable — the URL is still shown */
     }
+  }
+
+  async function continueToOrder() {
+    setOrdering(true);
+    setOrderError(null);
+    const resp = await fetch("/api/engine/api/v1/quotes", {
+      method: "POST",
+      body: JSON.stringify({ template_id: template.id, selections }),
+    });
+    setOrdering(false);
+    if (!resp.ok) {
+      const body = await resp.json().catch(() => null);
+      setOrderError(body?.detail ?? "Could not prepare your order — please try again.");
+      return;
+    }
+    const quote = await resp.json();
+    router.push(`/checkout/${quote.id}`);
   }
 
   const status = price?.validity.status;
@@ -175,13 +196,22 @@ export function Configurator({
             )}
 
             <p style={{ marginTop: "1.25rem" }}>
-              <button className="cta" disabled={status !== "purchasable"}>
-                {status === "purchasable" ? "Continue to order" : "Resolve selection first"}
+              <button
+                className="cta"
+                disabled={status !== "purchasable" || ordering}
+                onClick={continueToOrder}
+              >
+                {status === "purchasable"
+                  ? ordering
+                    ? "Preparing…"
+                    : "Continue to order"
+                  : "Resolve selection first"}
               </button>{" "}
               <button className="cta secondary" onClick={share}>
                 Share
               </button>
             </p>
+            {orderError && <p className="reason">{orderError}</p>}
             {status === "quote_only" && (
               <p>
                 <button className="cta secondary">Request a quote</button>
