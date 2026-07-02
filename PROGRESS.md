@@ -5,7 +5,7 @@ commit as the work it describes.
 
 ## Current phase
 
-**Phase 4 — Price sources & imports** (next up; Phases 0–3 complete)
+**Phase 5 — Admin app** (next up; Phases 0–4 complete)
 
 ## Phase tracker
 
@@ -17,7 +17,7 @@ Phases and exit tests are defined in `docs/spec/14-roadmap-and-open-decisions.md
 | 1 | Data model (Groups A–P) | ✅ complete | 2026-07-01 — 13 tests green: full template + components + options + manufacturability + versioned rule-set persisted; invalid metal combos impossible (material_options only) |
 | 2 | Rules engine | ✅ complete | 2026-07-01 — 32 tests green: validate() returns purchasable/quote_only/invalid + reasons on the seeded template with real compatibility/exclusion/requirement/conditional/price-modifier rules |
 | 3 | Pricing engine | ✅ complete | 2026-07-01 — 50 tests green incl. all spec 06 §9 cases: worked example, magic-size jump, lab/natural delta, stale-feed→quote_only range, weight override, engraving/non-returnable, FX+VAT swap, snapshot byte-for-byte reproduction, version-pin proof |
-| 4 | Price sources & imports | ⬜ not started | — |
+| 4 | Price sources & imports | ✅ complete | 2026-07-01 — 60 tests green: mocked GoldAPI spot flows into a real computed price with snapshot pin; CSV import dry-runs per row and commits idempotently |
 | 5 | Admin app | ⬜ not started | — |
 | 6 | Configurator + pricing API (headless) | ⬜ not started | — |
 | 7 | Storefront (Next.js) | ⬜ not started | — |
@@ -60,6 +60,7 @@ not yet listed.
 | Date | What |
 |---|---|
 | 2026-07-01 | Spec docs (16 files) received and moved to `docs/spec/`. Root docs created (README, PRINCIPLES, PROGRESS, CLAUDE). `.gitignore` + local `.env` (token, not committed). Backend decision #11 confirmed: Python + FastAPI. Phase 0 started. |
+| 2026-07-01 | **Phase 4 complete.** `app/sources/`: GoldAPI adapter (per-karat grams, spot→per-gram for Ag/Pt, 20k derived from 24k×833/999 when absent) + manual provider, priority fallback chain, every attempt logged to price_refresh_log, snapshots appended as a time series; ECB FX adapter (daily CSV, base EUR) → fx_rates. `app/imports/`: CSV framework with column mapping, per-row validation into supplier_import_rows, dry-run touches nothing, commit upserts diamond_price_tables idempotently. **Owner action needed:** a real GoldAPI key must be set in metal_price_sources config before launch (manual provider works meanwhile). Scheduler wiring (cron/Arq for refresh jobs) lands with Phase 6 ops. |
 | 2026-07-01 | **Phase 3 complete.** `app/pricing/`: pure deterministic engine, all Decimal minor-unit math (no floats). weight.py (volume×SG×waste×size-factor, override wins, missing input → None never 0), inputs.py (explicit input dataclasses with freshness flags), engine.py (master formula: metal/stone+magic-size/side stones/labor/engraving/fees/buffers/margin/VAT + rule modifiers; canonical statuses; degraded-but-fresh-enough stays purchasable; too-stale → quote_only with ±10% estimated range; no basis at all → no total AND no range), snapshot.py (rebuild inputs from a snapshot and reproduce byte-for-byte). DB/cache wiring (GoldAPI/ECB adapters, Redis) is Phase 4 per roadmap. |
 | 2026-07-01 | **Phase 2 complete.** `app/rules/`: safe JSON-logic evaluator (allow-listed operators only — var/and/or/not/==/!=/comparisons/in/missing/if, depth-capped, malformed rules fail safe to invalid) + pure DB-free validate() implementing the 5 rule types with deterministic conflict priority (blocks > requirements > visibility > modifiers), template required-groups, manufacturability limit checks (breach → invalid, manual-CAD flag → quote_only). Tested in-memory AND against the DB-seeded Oval Solitaire rule set. Rule-simulator publish check deferred to Phase 5 (admin publish flow) per spec. |
 | 2026-07-01 | **Phase 1 complete.** All data-model groups A–P implemented (111 tables, migrations 0002–0006): catalog/templates/options, rings, metals + densities + material_options, stones + price tables + carat bands, CAD, versioned rules, pricing incl. fully version-pinned immutable price_snapshots, supplier imports, bespoke, orders/payments/withdrawals, production/QC/hallmarking, customers/GDPR, SEO/GEO + indexable_configurations, merchant feeds, jobs/audit. Reference seeds (densities from spec 06, EU ring sizes, diamond grades, magic-size bands) + demo "Oval Solitaire" template fixture with published rule-set v1. Exit test green (13 tests). Note: 20k density is a placeholder (decision #9 — factory must confirm). |
