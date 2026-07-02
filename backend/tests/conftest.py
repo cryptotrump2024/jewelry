@@ -54,13 +54,15 @@ def database():
 
 @pytest.fixture(autouse=True)
 async def _fresh_engine_per_loop():
-    """asyncpg connections are bound to an event loop; pytest-asyncio gives
+    """asyncpg/redis connections are bound to an event loop; pytest-asyncio
 
-    each test its own loop, so the pooled engine must not outlive the test.
+    gives each test its own loop, so pooled clients must not outlive the test.
     """
     yield
     from app.db import dispose_engine
+    from app.services.config_service import close_redis
 
+    await close_redis()
     await dispose_engine()
 
 

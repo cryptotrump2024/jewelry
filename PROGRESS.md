@@ -5,7 +5,7 @@ commit as the work it describes.
 
 ## Current phase
 
-**Phase 6 — Configurator + pricing API (headless)** (next up; Phases 0–5 complete)
+**Phase 7 — Storefront (Next.js)** (next up; Phases 0–6 complete)
 
 ## Phase tracker
 
@@ -19,7 +19,7 @@ Phases and exit tests are defined in `docs/spec/14-roadmap-and-open-decisions.md
 | 3 | Pricing engine | ✅ complete | 2026-07-01 — 50 tests green incl. all spec 06 §9 cases: worked example, magic-size jump, lab/natural delta, stale-feed→quote_only range, weight override, engraving/non-returnable, FX+VAT swap, snapshot byte-for-byte reproduction, version-pin proof |
 | 4 | Price sources & imports | ✅ complete | 2026-07-01 — 60 tests green: mocked GoldAPI spot flows into a real computed price with snapshot pin; CSV import dry-runs per row and commits idempotently |
 | 5 | Admin app | ✅ complete | 2026-07-02 — exit flow works in the UI, no code: create template → attach option steps → draft/simulate/publish rules → edit pricing config → correct live itemized breakdown. Media-upload + SEO-fields screens deliberately trail into Phases 7/9 when the storefront consumes them |
-| 6 | Configurator + pricing API (headless) | ⬜ not started | — |
+| 6 | Configurator + pricing API (headless) | ✅ complete | 2026-07-02 — FRD MVP criteria 1–3 pass against /api/v1 (91 tests); p95 latency asserted < 300 ms in-suite |
 | 7 | Storefront (Next.js) | ⬜ not started | — |
 | 8 | Orders, bespoke, production, compliance | ⬜ not started | — |
 | 9 | SEO/GEO output + Merchant feed | ⬜ not started | — |
@@ -60,6 +60,7 @@ not yet listed.
 | Date | What |
 |---|---|
 | 2026-07-01 | Spec docs (16 files) received and moved to `docs/spec/`. Root docs created (README, PRINCIPLES, PROGRESS, CLAUDE). `.gitignore` + local `.env` (token, not committed). Backend decision #11 confirmed: Python + FastAPI. Phase 0 started. |
+| 2026-07-02 | **Phase 6 complete.** `app/api/public.py` (/api/v1): catalog reads (categories, templates + components + option groups with defaults, published rules for client hinting, ring sizes); POST /config/validate and /config/price per the spec-13 response contract (validity/itemized/total/estimated_range/weight/config_hash, never NaN); POST /config/share + GET /config/{code} via urlsafe-base64 state (no storage, exact reproduction, noindex). `app/services/config_service.py`: config_hash embeds the latest metal-snapshot stamp (a refresh self-invalidates every cached price); Redis response cache is fail-open (Redis down = slower, never wrong). Redis added to CI. Exit verified: FRD criteria 1–3 via API, identical-input determinism, p95 < 300 ms. |
 | 2026-07-02 | **Phase 5 complete.** Admin pricing-config API (GET config; PUT labor/margins/buffers/VAT/manual metal prices; POST refresh-metals; POST CSV diamond import with dry-run) + optional ADMIN_API_TOKEN bearer guard on all /admin routes. Admin UI pages: /pricing (edit every engine number, latest metal snapshots, refresh button) and /imports (paste CSV → dry-run report with per-row errors → commit gated on zero errors). Verified live end-to-end. Trailing items (recorded, not blocking): media upload UI, SEO-fields UI, real staff accounts. |
 | 2026-07-02 | **Phase 5: pricing resolver + live breakdown.** `app/seeds/pricing.py`: labor/margin (60%)/buffers/VAT NL 21%/manual metal source (placeholder per-gram prices, GoldAPI replaces)/diamond price tables (G-SI1, lab + natural ×3.3, oval+round) — all admin-replaceable; seed_all now also runs one manual metal refresh so the demo prices out of the box. `app/services/pricing_resolver.py`: template+selections → published rules validate → density via material_options → latest metal snapshot (per-source staleness: manual 30d/90d, API 1h/24h) → stone table row + magic-size band → labor/margin/buffers/VAT → compute_price; invalid never priced; rules quote_only flag downgrades price. `POST /admin/templates/{id}/price-preview` returns validation + itemized breakdown. 77 tests green incl. 6 end-to-end preview cases. |
 | 2026-07-02 | **Phase 5 UI (first slice).** `admin/`: Next.js 15 (App Router) admin app on port 3001 — template list + create, template detail (option groups in step order with options, rule-set versions), attach-group form, draft rule-set creation, Simulate (full report shown) and Publish buttons (422 refusal report surfaced). `/api/engine/[...path]` proxy keeps the engine URL server-side, no CORS. Verified live end-to-end: page renders seeded data; simulate+publish flow works through the UI proxy. Simulator hardened: empty option groups no longer make simulation vacuous (required-empty = contradiction; optional-empty skipped + reported). Demo seed fixed: certificate group attached so >0.30 ct carats aren't dead options — seeded template now simulates 2160/2160 valid. Still for Phase 5 exit: pricing-config UI, imports UI, media/SEO fields, staff auth, live price breakdown. |
